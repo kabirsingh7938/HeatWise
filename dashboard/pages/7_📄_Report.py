@@ -1,0 +1,251 @@
+import streamlit as st
+import pandas as pd
+from datetime import datetime
+from reportlab.platypus import (
+    SimpleDocTemplate,
+    Paragraph,
+    Spacer
+)
+from reportlab.lib.styles import getSampleStyleSheet
+import tempfile
+
+st.set_page_config(
+    page_title="HeatWise Report",
+    page_icon="📄",
+    layout="wide"
+)
+
+# ==================================
+# LOAD DISTRICT DATA
+# ==================================
+
+df = pd.read_csv(
+    "../data/HeatWise_Delhi_District_Intelligence.csv"
+)
+
+df.columns = df.columns.str.strip()
+
+# ==================================
+# CALCULATIONS
+# ==================================
+
+avg_temp = df["Avg_LST"].mean()
+avg_ndvi = df["Avg_NDVI"].mean()
+avg_ndbi = df["Avg_NDBI"].mean()
+
+hottest = df.loc[df["Avg_LST"].idxmax()]
+coolest = df.loc[df["Avg_LST"].idxmin()]
+greenest = df.loc[df["Avg_NDVI"].idxmax()]
+builtup = df.loc[df["Avg_NDBI"].idxmax()]
+
+score = 100
+
+score -= (avg_temp - 35) * 2
+score += avg_ndvi * 25
+score -= avg_ndbi * 20
+
+score = max(0, min(100, int(score)))
+
+if score < 40:
+    risk = "HIGH RISK"
+elif score < 70:
+    risk = "MODERATE RISK"
+else:
+    risk = "LOW RISK"
+
+# ==================================
+# PAGE
+# ==================================
+
+st.title("📄 HeatWise Professional Report")
+
+st.write(
+    "Generate a district-level PDF intelligence report."
+)
+
+st.write("---")
+
+# ==================================
+# METRICS
+# ==================================
+
+c1, c2, c3, c4 = st.columns(4)
+
+c1.metric("HeatWise Score", f"{score}/100")
+c2.metric("Avg Temp", f"{avg_temp:.2f} °C")
+c3.metric("Avg NDVI", f"{avg_ndvi:.2f}")
+c4.metric("Avg NDBI", f"{avg_ndbi:.2f}")
+
+st.write("---")
+
+# ==================================
+# SUMMARY
+# ==================================
+
+st.subheader("Executive Summary")
+
+st.info(f"""
+HeatWise Score: {score}/100
+
+Risk Level: {risk}
+
+🔥 Hottest District: {hottest['DISTRICT']}
+
+🌡 Coolest District: {coolest['DISTRICT']}
+
+🌿 Greenest District: {greenest['DISTRICT']}
+
+🏢 Most Built-Up District: {builtup['DISTRICT']}
+""")
+
+# ==================================
+# DISTRICT TABLE
+# ==================================
+
+st.subheader("District Intelligence")
+
+st.dataframe(
+    df[
+        [
+            "DISTRICT",
+            "Avg_LST",
+            "Avg_NDVI",
+            "Avg_NDBI"
+        ]
+    ],
+    use_container_width=True
+)
+
+# ==================================
+# PDF GENERATOR
+# ==================================
+
+if st.button("📄 Generate PDF Report"):
+
+    temp_pdf = tempfile.NamedTemporaryFile(
+        delete=False,
+        suffix=".pdf"
+    )
+
+    doc = SimpleDocTemplate(temp_pdf.name)
+
+    styles = getSampleStyleSheet()
+
+    content = []
+
+    content.append(
+        Paragraph(
+            "HeatWise District Intelligence Report",
+            styles["Title"]
+        )
+    )
+
+    content.append(Spacer(1, 12))
+
+    content.append(
+        Paragraph(
+            f"Generated: {datetime.now()}",
+            styles["Normal"]
+        )
+    )
+
+    content.append(Spacer(1, 20))
+
+    content.append(
+        Paragraph(
+            "Executive Summary",
+            styles["Heading2"]
+        )
+    )
+
+    content.append(
+        Paragraph(
+            f"""
+            HeatWise Score: {score}/100<br/>
+            Risk Level: {risk}<br/><br/>
+
+            Hottest District:
+            {hottest['DISTRICT']}<br/>
+
+            Coolest District:
+            {coolest['DISTRICT']}<br/>
+
+            Greenest District:
+            {greenest['DISTRICT']}<br/>
+
+            Most Built-Up District:
+            {builtup['DISTRICT']}<br/>
+            """,
+            styles["BodyText"]
+        )
+    )
+
+    content.append(Spacer(1, 20))
+
+    content.append(
+        Paragraph(
+            "District Rankings",
+            styles["Heading2"]
+        )
+    )
+
+    for _, row in df.sort_values(
+        "Avg_LST",
+        ascending=False
+    ).iterrows():
+
+        content.append(
+            Paragraph(
+                f"""
+                {row['DISTRICT']}
+                | Temp: {row['Avg_LST']:.2f} °C
+                | NDVI: {row['Avg_NDVI']:.3f}
+                | NDBI: {row['Avg_NDBI']:.3f}
+                """,
+                styles["BodyText"]
+            )
+        )
+
+    content.append(Spacer(1, 20))
+
+    content.append(
+        Paragraph(
+            "Recommendations",
+            styles["Heading2"]
+        )
+    )
+
+    content.append(
+        Paragraph(
+            """
+            • Increase tree canopy in high-risk districts.<br/>
+            • Promote cool roofs and reflective materials.<br/>
+            • Expand urban green infrastructure.<br/>
+            • Improve district-level heat monitoring.<br/>
+            • Prioritize cooling investments in hottest districts.
+            """,
+            styles["BodyText"]
+        )
+    )
+
+    content.append(Spacer(1, 20))
+
+    content.append(
+        Paragraph(
+            "Generated by HeatWise AI Urban Heat Intelligence Platform",
+            styles["Italic"]
+        )
+    )
+
+    doc.build(content)
+
+    with open(temp_pdf.name, "rb") as pdf_file:
+
+        st.download_button(
+            label="⬇ Download PDF",
+            data=pdf_file,
+            file_name="HeatWise_District_Report.pdf",
+            mime="application/pdf"
+        )
+
+    st.success("PDF generated successfully.")

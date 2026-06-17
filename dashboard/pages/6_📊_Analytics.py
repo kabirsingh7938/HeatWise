@@ -1,0 +1,205 @@
+import streamlit as st
+import pandas as pd
+
+st.set_page_config(
+    page_title="Analytics",
+    page_icon="📊",
+    layout="wide"
+)
+
+# ==================================
+# LOAD DATA
+# ==================================
+
+df = pd.read_csv(
+    "../data/HeatWise_Delhi_District_Intelligence.csv"
+)
+
+df.columns = df.columns.str.strip()
+
+# ==================================
+# PAGE HEADER
+# ==================================
+
+st.title("📊 HeatWise District Analytics")
+
+st.markdown("""
+Advanced district-level urban heat intelligence
+for Delhi using satellite imagery and AI analysis.
+""")
+
+# ==================================
+# METRICS
+# ==================================
+
+avg_temp = df["Avg_LST"].mean()
+
+hottest = df.loc[df["Avg_LST"].idxmax()]
+coolest = df.loc[df["Avg_LST"].idxmin()]
+
+c1, c2, c3 = st.columns(3)
+
+with c1:
+    st.metric(
+        "🌡 Average Temperature",
+        f"{avg_temp:.2f} °C"
+    )
+
+with c2:
+    st.metric(
+        "🔥 Hottest District",
+        hottest["DISTRICT"]
+    )
+
+with c3:
+    st.metric(
+        "❄️ Coolest District",
+        coolest["DISTRICT"]
+    )
+
+# ==================================
+# HEAT RANKINGS
+# ==================================
+
+st.write("---")
+
+st.header("🔥 District Heat Rankings")
+
+heat_rankings = df.sort_values(
+    "Avg_LST",
+    ascending=False
+)
+
+st.dataframe(
+    heat_rankings[
+        [
+            "DISTRICT",
+            "Avg_LST",
+            "Avg_NDVI",
+            "Avg_NDBI"
+        ]
+    ],
+    use_container_width=True
+)
+
+# ==================================
+# HOTTEST DISTRICTS
+# ==================================
+
+st.write("---")
+
+st.header("🔥 Hottest Districts")
+
+st.bar_chart(
+    heat_rankings.set_index(
+        "DISTRICT"
+    )["Avg_LST"]
+)
+
+# ==================================
+# GREENEST DISTRICTS
+# ==================================
+
+st.write("---")
+
+st.header("🌿 Vegetation Analysis")
+
+green_rankings = df.sort_values(
+    "Avg_NDVI",
+    ascending=False
+)
+
+st.bar_chart(
+    green_rankings.set_index(
+        "DISTRICT"
+    )["Avg_NDVI"]
+)
+
+# ==================================
+# BUILT-UP ANALYSIS
+# ==================================
+
+st.write("---")
+
+st.header("🏢 Built-Up Intensity Analysis")
+
+built_rankings = df.sort_values(
+    "Avg_NDBI",
+    ascending=False
+)
+
+st.bar_chart(
+    built_rankings.set_index(
+        "DISTRICT"
+    )["Avg_NDBI"]
+)
+
+# ==================================
+# TEMPERATURE VS VEGETATION
+# ==================================
+
+st.write("---")
+
+st.header("🌿 Temperature vs Vegetation")
+
+scatter_df = df.rename(
+    columns={
+        "Avg_LST": "Temperature",
+        "Avg_NDVI": "Vegetation"
+    }
+)
+
+st.scatter_chart(
+    scatter_df,
+    x="Vegetation",
+    y="Temperature"
+)
+
+# ==================================
+# AI INSIGHTS
+# ==================================
+
+st.write("---")
+
+st.header("🧠 AI Insights")
+
+greenest = df.loc[df["Avg_NDVI"].idxmax()]
+builtup = df.loc[df["Avg_NDBI"].idxmax()]
+
+st.info(f"""
+🔥 Hottest District:
+{hottest['DISTRICT']}
+({hottest['Avg_LST']:.2f} °C)
+
+❄️ Coolest District:
+{coolest['DISTRICT']}
+({coolest['Avg_LST']:.2f} °C)
+
+🌿 Greenest District:
+{greenest['DISTRICT']}
+(NDVI {greenest['Avg_NDVI']:.3f})
+
+🏢 Most Built-Up District:
+{builtup['DISTRICT']}
+(NDBI {builtup['Avg_NDBI']:.3f})
+
+Key Observation:
+
+Districts with lower vegetation cover
+generally show higher temperatures,
+while increased built-up intensity
+correlates with stronger urban heat effects.
+""")
+
+# ==================================
+# DISTRICT TABLE
+# ==================================
+
+st.write("---")
+
+st.header("📋 Complete District Dataset")
+
+st.dataframe(
+    df,
+    use_container_width=True
+)
