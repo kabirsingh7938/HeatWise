@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+from pathlib import Path
 
 st.set_page_config(
     page_title="AI Advisor",
@@ -11,9 +12,13 @@ st.set_page_config(
 # LOAD DATA
 # ==================================
 
-df = pd.read_csv(
-    "../data/HeatWise_Delhi_District_Intelligence.csv"
+csv_file = (
+    Path(__file__).resolve().parents[2]
+    / "data"
+    / "HeatWise_Delhi_District_Intelligence.csv"
 )
+
+df = pd.read_csv(csv_file)
 
 df.columns = df.columns.str.strip()
 
