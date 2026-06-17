@@ -11,9 +11,10 @@ st.set_page_config(
 # LOAD DISTRICT DATA
 # ==================================
 
-df = pd.read_csv(
-    "../data/HeatWise_Delhi_District_Intelligence.csv"
-)
+from pathlib import Path
+
+csv_file = Path(__file__).resolve().parents[2] / "data" / "HeatWise_Delhi_District_Intelligence.csv"
+df = pd.read_csv(csv_file)
 
 df.columns = df.columns.str.strip()
 
