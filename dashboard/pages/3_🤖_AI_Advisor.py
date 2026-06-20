@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import google.generativeai as genai
 from pathlib import Path
 
 st.set_page_config(
@@ -25,6 +26,18 @@ df.columns = df.columns.str.strip()
 avg_temp = df["Avg_LST"].mean()
 avg_ndvi = df["Avg_NDVI"].mean()
 avg_ndbi = df["Avg_NDBI"].mean()
+
+# ==================================
+# GEMINI CONFIG
+# ==================================
+
+genai.configure(
+    api_key=st.secrets["GEMINI_API_KEY"]
+)
+
+model = genai.GenerativeModel(
+    "gemini-2.5-flash"
+)
 
 # ==================================
 # PAGE
