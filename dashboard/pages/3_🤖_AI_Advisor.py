@@ -134,125 +134,74 @@ for item in recommendation:
     st.success(item)
 
 # ==================================
-# QUESTION BOX
+# HEATWISE COPILOT
 # ==================================
 
 st.write("---")
 
-question = st.text_input(
-    "Ask HeatWise:",
-    placeholder="How can Delhi reduce urban heat?"
+st.subheader("🤖 HeatWise Urban Climate Copilot")
+
+question = st.text_area(
+    "Ask HeatWise",
+    placeholder="Why is South West Delhi hotter than New Delhi?"
 )
 
-if question:
+if st.button("Generate AI Insight"):
 
-    q = question.lower()
-
-    if "heat" in q:
-
-        answer = f"""
-Delhi average temperature is {avg_temp:.2f} °C.
-
-The hottest district is:
-
-{df.loc[df['Avg_LST'].idxmax()]['DISTRICT']}
-
-Key heat drivers:
-
-• High built-up intensity
-
-• Low vegetation cover
-
-• Dense urban development
-
-Recommended actions:
-
-• Urban forests
-
-• Cool roofs
-
-• Green corridors
-"""
-
-    elif "vegetation" in q or "ndvi" in q:
-
-        answer = f"""
-Average NDVI is {avg_ndvi:.3f}.
-
-Vegetation is the strongest natural
-cooling mechanism identified by HeatWise.
-
-Districts with higher NDVI generally
-show lower temperatures.
-"""
-
-    elif "building" in q or "ndbi" in q:
-
-        answer = f"""
-Average NDBI is {avg_ndbi:.3f}.
-
-Higher NDBI indicates stronger
-built-up intensity and greater
-heat retention.
-"""
-
-    elif "district" in q:
-
-        hottest = df.loc[df["Avg_LST"].idxmax()]
-        coolest = df.loc[df["Avg_LST"].idxmin()]
-
-        answer = f"""
-🔥 Hottest District:
-{hottest['DISTRICT']}
-
-🌡 Coolest District:
-{coolest['DISTRICT']}
-
-HeatWise recommends prioritizing
-cooling interventions in hotter districts.
-"""
-
-    elif "cooling" in q:
-
-        answer = """
-Top Cooling Strategies:
-
-1. Urban forests
-
-2. Green roofs
-
-3. Cool roofs
-
-4. Public parks
-
-5. Water-sensitive design
-"""
+    if question.strip() == "":
+        st.warning("Please enter a question.")
 
     else:
 
-        answer = """
-HeatWise understands:
+        with st.spinner("Analyzing urban heat intelligence..."):
 
-• Heat
+            prompt = f"""
+You are HeatWise AI.
 
-• Temperature
+You are an expert urban climate analyst helping city planners understand heat stress.
 
-• Districts
+Selected District:
+{district}
 
-• NDVI
+District Metrics:
+Temperature (LST): {district_data['Avg_LST']:.2f} °C
+NDVI: {district_data['Avg_NDVI']:.3f}
+NDBI: {district_data['Avg_NDBI']:.3f}
 
-• NDBI
+Delhi Averages:
+Temperature: {avg_temp:.2f} °C
+NDVI: {avg_ndvi:.3f}
+NDBI: {avg_ndbi:.3f}
 
-• Vegetation
+Instructions:
 
-• Cooling Strategies
+- Explain findings clearly.
+- Use district data when relevant.
+- Recommend cooling interventions.
+- Explain NDVI and NDBI when useful.
+- Provide practical urban planning insights.
+- Answer in a professional but easy-to-understand way.
+
+User Question:
+
+{question}
 """
 
-    st.write("---")
+            try:
 
-    st.subheader("💬 HeatWise Response")
+                response = model.generate_content(
+                    prompt
+                )
 
-    st.success(answer)
+                st.success(
+                    response.text
+                )
+
+            except Exception as e:
+
+                st.error(
+                    f"Gemini Error: {e}"
+                )
 
 # ==================================
 # DISTRICT TABLE
@@ -292,15 +241,19 @@ st.write("---")
 st.subheader("Suggested Questions")
 
 st.info("""
-• Which district is hottest?
+• Why is South West Delhi hotter than New Delhi?
 
-• Which district has the most vegetation?
+• Which district should receive cooling investments first?
 
-• How can Delhi reduce urban heat?
+• What would happen if NDVI increased by 20%?
 
-• What does NDVI mean?
+• How can Delhi reduce urban heat island effects?
 
-• What does NDBI mean?
+• Explain this district's heat risk.
 
-• What cooling strategy is most effective?
+• What cooling strategy is best for this district?
+
+• Compare this district with the coolest district.
+
+• How does built-up intensity affect temperature?
 """)
